@@ -3,6 +3,7 @@ const app = express();
 const User = require('./modles/user');
 const mongoose = require('mongoose');
 const bcyrpt = require('bcrypt');
+const session = require('express-session');
 
 mongoose.connect('mongodb://127.0.0.1:27017/loginDemo', {useNewUrlParsel})
   .then(() => {
@@ -17,19 +18,23 @@ app.set('view engine', 'ejs');
 app.set('views', 'views');
 
 app.use(express.urlencoded({extended: true}));
+app.use(session({secret: 'notagoodsecret'}));
+
+app.use(express.urlencoded({extended: true}));
 
 app.get('/', (req, res) => {
   res.render('This is the home page')
 })
 
 app.post('/register', async(req, res) => {
-  const {password, ursername} = req.body;
+  const {password, username} = req.body;
   const hash = await bcrypt.hash(password, 12);
   const user = new User ({
     username,
     password: hash
   })
   await user.save();
+  req.session.user_id = user._id;
   res.redirect('/');
 })
 
@@ -39,16 +44,20 @@ app.get('/login', (req,res) => {
 
 app.post('/login', async (req,res) => {
   const {username, password} = req.body;
-  const user = await User.findOne({username });
+  const user = await User.findOne({username});
   const validPassword = await bcrypt.compare(password, user.password);
   if(validPassword){
-    res.send("Welcome")
+    req.session.user_id = user._id;
+    res.redireect('/secrect')
   }else {
-    res.send("Try Again")
+    res.redirect('/login')
   }
 })
 
 app.get('/secret', (req, res) => {
+  if(!req.session.user_id){
+    res.redirect('/login')
+  }
   res.send('This is secret!')
 })
 
