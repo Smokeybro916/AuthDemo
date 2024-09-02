@@ -54,11 +54,16 @@ app.post('/login', async (req,res) => {
   }
 })
 
+app.post('/logout', (req, res) => {
+  req.session.user_id = null;
+  res.redirect('/login');
+})
+
 app.get('/secret', (req, res) => {
   if(!req.session.user_id){
-    res.redirect('/login')
+    return res.redirect('/login')
   }
-  res.send('This is secret!')
+  res.render('secret')
 })
 
 app.listen(3000, () => {
